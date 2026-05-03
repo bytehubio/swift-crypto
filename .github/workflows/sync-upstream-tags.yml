@@ -1,0 +1,24 @@
+# .github/workflows/sync-upstream-tags.yml
+name: Sync upstream tags
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+
+jobs:
+  sync-tags:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TAGS_TOKEN }}
+
+      - name: Sync tags from upstream
+        run: |
+          git remote add upstream https://github.com/apple/swift-crypto.git
+          git fetch upstream --tags
+          git push https://x-access-token:${{ secrets.SYNC_TAGS_TOKEN }}@github.com/bytehubio/swift-crypto.git --tags
