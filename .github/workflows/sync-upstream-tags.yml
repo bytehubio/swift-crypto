@@ -1,5 +1,4 @@
-# .github/workflows/sync-upstream-tags.yml
-name: Sync upstream tags
+name: Sync upstream
 
 on:
   workflow_dispatch:
@@ -7,7 +6,7 @@ on:
     - cron: "0 */6 * * *"
 
 jobs:
-  sync-tags:
+  sync-upstream:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,12 +16,22 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Sync tags from upstream
+      - name: Configure remotes
         env:
           TOKEN: ${{ secrets.SYNC_TAGS_TOKEN }}
         run: |
           git remote add upstream https://github.com/apple/swift-crypto.git
-          git fetch upstream --tags
-
           git remote set-url origin https://x-access-token:${TOKEN}@github.com/bytehubio/swift-crypto.git
+          git fetch upstream --prune --tags
+          git remote set-head upstream -a
+
+      - name: Sync default branch from upstream
+        continue-on-error: true
+        run: |
+          DEFAULT_BRANCH="$(git symbolic-ref --short refs/remotes/upstream/HEAD | sed 's#^upstream/##')"
+          git push origin "refs/remotes/upstream/${DEFAULT_BRANCH}:refs/heads/${DEFAULT_BRANCH}"
+
+      - name: Sync tags from upstream
+        if: always()
+        run: |
           git push origin --tags
